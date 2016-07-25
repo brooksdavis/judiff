@@ -62,6 +62,11 @@ for testcase in goldroot.findall('testcase'):
 
 testtree = ET.parse(testfile)
 testroot = testtree.getroot()
+judc = ET.SubElement(testroot, 'testcase', attrib={'classname':"judiff", 'name':"status"})
+sys_out = ET.SubElement(judc, 'system-out')
+sys_out.text = "Input files:\ngold: " + goldfile + "\ncompare: " + testfile + "\n"
+sys_error = ET.SubElement(judc, 'system-err')
+sys_error.text = "Identical tests removed:\n"
 for testcase in testtree.findall('testcase'):
 	name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
 	status = test_status(testcase)
@@ -69,5 +74,7 @@ for testcase in testtree.findall('testcase'):
 		continue
 	elif status == gold_status[name]:
 		testroot.remove(testcase)
+		sys_error.text += "classname: " + testcase.attrib['classname'] + " "
+		sys_error.text += "name: " + testcase.attrib['name'] + "\n"
 
 testtree.write(outfile)
