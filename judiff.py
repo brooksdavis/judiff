@@ -30,9 +30,21 @@
 #
 from __future__ import print_function
 import sys
+import xml.etree.ElementTree
 import xml.etree.ElementTree as ET
 
 gold_status = {}
+comp_extra_failures = []
+comp_extra_skipped = []
+gold_extra_failures = []
+gold_extra_skipped = []
+tests_not_in_gold = []
+
+
+def append_status(prefix, node, diff_list):
+    node.text += prefix
+    for entry in diff_list:
+        node.text += "    " + entry[0] + " (" + entry[1] + " vs " + entry[2] + ")\n"
 
 
 def usage():
@@ -73,11 +85,38 @@ sys_error.text = "Identical tests removed:\n"
 for testcase in testtree.findall('testcase'):
     name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
     status = test_status(testcase)
-    if not name in gold_status:
+    if name not in gold_status:
+        tests_not_in_gold.append(name)
         continue
     elif status == gold_status[name]:
         testroot.remove(testcase)
         sys_error.text += "classname: " + testcase.attrib['classname'] + " "
         sys_error.text += "name: " + testcase.attrib['name'] + "\n"
+        continue
+    if status == "failed":
+        comp_extra_failures.append((name, status, gold_status[name]))
+    if status == "skipped":
+        comp_extra_skipped.append((name, status, gold_status[name]))
+    if gold_status[name] == "failed":
+        gold_extra_failures.append((name, gold_status[name], status))
+    if gold_status[name] == "skipped":
+        gold_extra_skipped.append((name, gold_status[name], status))
+
+# Write a summary node:
+summary = ET.SubElement(testroot, 'testcase', attrib={'classname': "summary", 'name': "status"})
+summary_sys_out = ET.SubElement(summary, 'system-out')
+summary_sys_out.text = "Summary:\ngold: " + goldfile + "\ncompare: " + testfile + "\n"
+append_status("\nTests failed in comp:\n", summary_sys_out, comp_extra_failures)
+append_status("\nTests skipped in comp:\n", summary_sys_out, comp_extra_skipped)
+append_status("\nTests failed in gold:\n", summary_sys_out, gold_extra_failures)
+append_status("\nTests skipped in gold:\n", summary_sys_out, gold_extra_skipped)
+summary_sys_out.text += "\nTests not found in gold xml:\n"
+for i in tests_not_in_gold:
+    summary_sys_out.text += "\n" + i
+
+if comp_extra_failures or comp_extra_skipped:
+    msg = "Additional failures/skipped tests compared to gold"
+    summary_fail = ET.SubElement(summary, 'failure', attrib={'message': msg})
+
 
 testtree.write(outfile)
