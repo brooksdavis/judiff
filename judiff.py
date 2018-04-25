@@ -38,7 +38,7 @@ comp_extra_failures = []
 comp_extra_skipped = []
 gold_extra_failures = []
 gold_extra_skipped = []
-tests_not_in_gold = []
+tests_not_in_gold = {"failed": [], "skipped": [], "passed": []}
 
 
 def append_status(prefix, node, diff_list):
@@ -86,7 +86,7 @@ for testcase in testtree.findall('testcase'):
     name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
     status = test_status(testcase)
     if name not in gold_status:
-        tests_not_in_gold.append(name)
+        tests_not_in_gold[status].append(name)
         continue
     elif status == gold_status[name]:
         testroot.remove(testcase)
@@ -111,8 +111,10 @@ append_status("\nTests skipped in comp:\n", summary_sys_out, comp_extra_skipped)
 append_status("\nTests failed in gold:\n", summary_sys_out, gold_extra_failures)
 append_status("\nTests skipped in gold:\n", summary_sys_out, gold_extra_skipped)
 summary_sys_out.text += "\nTests not found in gold xml:\n"
-for i in tests_not_in_gold:
-    summary_sys_out.text += "\n" + i
+for k, v in tests_not_in_gold.items():
+    summary_sys_out.text += "\n    " + k + ":\n"
+    for name in v:
+        summary_sys_out.text += "        " + i + "\n"
 
 if comp_extra_failures or comp_extra_skipped:
     msg = "Additional failures/skipped tests compared to gold"
