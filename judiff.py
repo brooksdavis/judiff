@@ -114,7 +114,7 @@ summary_sys_out.text += "\nTests not found in gold xml:\n"
 for k, v in tests_not_in_gold.items():
     summary_sys_out.text += "\n    " + k + ":\n"
     for name in v:
-        summary_sys_out.text += "        " + i + "\n"
+        summary_sys_out.text += "        " + name + "\n"
 
 if comp_extra_failures or comp_extra_skipped:
     msg = "Additional failures/skipped tests compared to gold"
