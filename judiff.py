@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-
+# -
 # Copyright (c) 2016 SRI International
 # All rights reserved.
 #
@@ -28,53 +28,56 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-
+from __future__ import print_function
 import sys
 import xml.etree.ElementTree as ET
 
 gold_status = {}
 
-def usage():
-	print "usage: " + sys.argv[0] + " <gold-file> <comp-file> <outfile>"
-	exit(1)
 
-def test_status( test ):
-	failure = testcase.find('failure')
-	skipped = testcase.find('skipped')
-	if not failure is None:
-		return "failed"
-	if not skipped is None:
-		return "skiped"
-	return "passed"
+def usage():
+    print("usage: " + sys.argv[0] + " <gold-file> <comp-file> <outfile>")
+    exit(1)
+
+
+def test_status(test):
+    failure = testcase.find('failure')
+    skipped = testcase.find('skipped')
+    if failure is not None:
+        return "failed"
+    if skipped is not None:
+        return "skipped"
+    return "passed"
+
 
 if len(sys.argv) != 4:
-	usage()
-goldfile=sys.argv[1]
-testfile=sys.argv[2]
-outfile=sys.argv[3]
+    usage()
+goldfile = sys.argv[1]
+testfile = sys.argv[2]
+outfile = sys.argv[3]
 
 goldtree = ET.parse(goldfile)
 goldroot = goldtree.getroot()
 
 for testcase in goldroot.findall('testcase'):
-	name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
-	gold_status[name] = test_status(testcase)
+    name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
+    gold_status[name] = test_status(testcase)
 
 testtree = ET.parse(testfile)
 testroot = testtree.getroot()
-judc = ET.SubElement(testroot, 'testcase', attrib={'classname':"judiff", 'name':"status"})
+judc = ET.SubElement(testroot, 'testcase', attrib={'classname': "judiff", 'name': "status"})
 sys_out = ET.SubElement(judc, 'system-out')
 sys_out.text = "Input files:\ngold: " + goldfile + "\ncompare: " + testfile + "\n"
 sys_error = ET.SubElement(judc, 'system-err')
 sys_error.text = "Identical tests removed:\n"
 for testcase in testtree.findall('testcase'):
-	name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
-	status = test_status(testcase)
-	if not name in gold_status:
-		continue
-	elif status == gold_status[name]:
-		testroot.remove(testcase)
-		sys_error.text += "classname: " + testcase.attrib['classname'] + " "
-		sys_error.text += "name: " + testcase.attrib['name'] + "\n"
+    name = testcase.attrib['classname'] + ":" + testcase.attrib['name']
+    status = test_status(testcase)
+    if not name in gold_status:
+        continue
+    elif status == gold_status[name]:
+        testroot.remove(testcase)
+        sys_error.text += "classname: " + testcase.attrib['classname'] + " "
+        sys_error.text += "name: " + testcase.attrib['name'] + "\n"
 
 testtree.write(outfile)
